@@ -1,60 +1,58 @@
-import React from "react";
+import { useState } from "react";
+import ChatAdd from "../assets/chat-add.svg";
+import { RecordController } from "../controllers/RecordController";
+import { DataInsertModel } from "../controllers/Types";
 
-function CreateChatRoom() {
+function CreateChatRoom({ onClose }: { onClose: () => void }) {
+  const [chatNameValue, setChatNameValue] = useState<string>("");
+
+  const handleAddChatRoom = async () => {
+    if (
+      chatNameValue.length <= 0 ||
+      chatNameValue === null ||
+      chatNameValue === ""
+    ) {
+      alert("Please enter a chat room name.");
+      return;
+    }
+
+    let m: DataInsertModel = {
+      collectionName: "chat_room",
+      values: {
+        name: chatNameValue,
+        is_dm: false,
+      },
+    };
+
+    let response = await RecordController.InsertData(m);
+
+    let mChatRoomUser: DataInsertModel = {
+      collectionName: "chat_room_participant",
+      values: {
+        chat_room_id: Number(response.data),
+        user_id: Number(localStorage.getItem("bonanza_user_id")),
+      },
+    };
+    await RecordController.InsertData(mChatRoomUser);
+    onClose();
+  };
+
   return (
     <div>
-      <div className="max-w-sm mx-auto">
-        <div className="mb-5">
-          <label
-            htmlFor="email"
-            className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Your email
-          </label>
-          <input
-            type="email"
-            id="email"
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="name@flowbite.com"
-            required
-          />
-        </div>
-        <div className="mb-5">
-          <label
-            htmlFor="password"
-            className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >
-            Your password
-          </label>
-          <input
-            type="password"
-            id="password"
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            required
-          />
-        </div>
-        <div className="flex items-start mb-5">
-          <div className="flex items-center h-5">
-            <input
-              id="remember"
-              type="checkbox"
-              value=""
-              className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800"
-              required
-            />
-          </div>
-          <label
-            htmlFor="remember"
-            className="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-          >
-            Remember me
-          </label>
-        </div>
+      <div className="text-xl font-bold pb-2 px-2">New Chat Room</div>
+      <div className="flex space-x-2">
+        <input
+          type="text"
+          placeholder="Type new chat room name..."
+          value={chatNameValue}
+          onChange={(e) => setChatNameValue(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
         <button
-          type="submit"
-          className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          onClick={handleAddChatRoom}
+          className=" text-white rounded-full p-2 hover:bg-yellow-500"
         >
-          Submit
+          <img src={ChatAdd} alt="Add chat-rooom" className="w-6 h-6" />
         </button>
       </div>
     </div>

@@ -50,6 +50,10 @@ export type HomeChatRoomModel = {
   updated: Date;
 };
 
+export type ChatRoomModel = HomeChatRoomModel & {
+  is_dm: boolean;
+};
+
 export interface ChatMessage {
   chat_room_id: number;
   created: string;
@@ -63,3 +67,11 @@ export interface ChatMessageNotify {
   chat_room_id: number;
   message_id: number;
 }
+
+export type UserModel = {
+  id: number;
+  created: Date;
+  updated: Date;
+  username: string;
+  email: string;
+};

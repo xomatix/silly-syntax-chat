@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ViewsController } from "./controllers/ViewsController";
 import { ChatMessageNotify, HomeChatRoomModel } from "./controllers/Types";
 import { RealTimeController } from "./controllers/RealTimeController";
 import ChatRoom from "./ChatRoom/ChatRoom";
 import ChatRoomsListElem from "./ChatRoomsListElem/ChatRoomsListElem";
+import { AuthController } from "./controllers/AuthController";
+import ChatAdd from "./assets/chat-add.svg";
+import Logout from "./assets/logout.svg";
+import PopupComponent from "./Popup/PopupComponent";
+import CreateChatRoom from "./CreateChatRoom/CreateChatRoom";
 
 function ChatRoomsList() {
   const [chatRooms, setChatRooms] = useState<HomeChatRoomModel[]>([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState<number>(0);
+  const [showAddChatRoom, setShowAddChatRoom] = useState<boolean>(false);
   const [recievedMessage, setRecievedMessage] =
     useState<ChatMessageNotify | null>(null);
 
@@ -37,53 +43,45 @@ function ChatRoomsList() {
     let records: HomeChatRoomModel[] = resp.data;
     setChatRooms(records);
   };
+
+  const handleAddChatRoom = () => {
+    setShowAddChatRoom(true);
+  };
+
+  const handleLogout = async () => {
+    await AuthController.Logout();
+    window.location.reload();
+  };
   //#endregion
 
   return (
-    // <div
-    //   className="flex h-full w-full items-center justify-center"
-    //   style={{
-    //     backgroundImage: backgroundImage,
-    //     backgroundSize: "cover",
-    //   }}
-    // >
-    //   <div className="w-full 2xl:w-[100rem] min-h-dvh 2xl:h-3/4 ">
-    //     <div className="p-5 w-full h-full rounded rounded-lg items-center justify-center flex flex-col bg-sky-950 bg-opacity-50 backdrop-blur-md">
-
-    //       <div className="grid grid-cols-3 w-full h-full">
-    //         <div className="col-span-1 mr-1">
-    //           <div className="flex">
-    //             <input className="m-2 w-full rounded h-10" type="text"></input>
-    //           </div>
-    //           {chatRooms.map((chatRoom) => (
-    //             <ChatRoomsListElem
-    //               key={chatRoom.id}
-    //               chatRoom={chatRoom}
-    //               setSelectedChatRoom={setSelectedChatRoom}
-    //             />
-    //           ))}
-    //         </div>
-
-    //         <div className="border-l-2 pl-1 border-indigo-200 col-span-2 h-[100%]">
-    //           <ChatRoom
-    //             chatRoomId={selectedChatRoom}
-    //             recievedMessage={recievedMessage}
-    //           />
-    //         </div>
-    //       </div>
-    //     </div>
-    //   </div>
-    // </div>
     <div className="flex h-screen bg-gray-100">
       {/* Left sidebar */}
       <div className="w-1/4 bg-white border-r border-gray-200 overflow-y-auto">
         <div className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Chats</h2>
+          <div className="flex justify-between mb-4">
+            <div className="text-xl font-semibold">Chats</div>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleAddChatRoom}
+                className="text-white rounded-full p-2 hover:bg-yellow-500"
+              >
+                <img src={ChatAdd} alt="Add chat-rooom" className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleLogout}
+                className=" text-white rounded-full p-2 hover:bg-yellow-500"
+              >
+                <img src={Logout} alt="Logout" className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
           {/* Chat room list */}
           <div className="space-y-4">
             {chatRooms.map((room) => (
               <ChatRoomsListElem
                 key={room.id}
+                selectedChatRoomID={selectedChatRoom}
                 chatRoom={room}
                 setSelectedChatRoom={setSelectedChatRoom}
               />
@@ -97,6 +95,17 @@ function ChatRoomsList() {
         chatRoomId={selectedChatRoom}
         recievedMessage={recievedMessage}
       />
+
+      {showAddChatRoom && (
+        <PopupComponent onClose={() => setShowAddChatRoom(false)}>
+          <CreateChatRoom
+            onClose={() => {
+              setShowAddChatRoom(false);
+              handleReload();
+            }}
+          />
+        </PopupComponent>
+      )}
     </div>
   );
 }

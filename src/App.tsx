@@ -12,8 +12,9 @@ function App() {
 
   const checkIfLoggedIn = () => {
     let user_id = Number(localStorage.getItem("bonanza_user_id"));
-
-    if (user_id == null || user_id <= 0) return false;
+    let token = localStorage.getItem("bonanza_token");
+    if (user_id == null || user_id <= 0 || token == null || token.length <= 0)
+      return false;
     return true;
   };
 
