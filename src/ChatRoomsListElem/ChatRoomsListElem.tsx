@@ -1,5 +1,5 @@
-import React from "react";
 import { HomeChatRoomModel } from "../controllers/Types";
+import BackgroundImg from "../assets/tatry-morskie-oko.jpg";
 
 function ChatRoomsListElem({
   chatRoom,
@@ -11,12 +11,17 @@ function ChatRoomsListElem({
   return (
     <div
       key={chatRoom.id}
+      className="flex items-center space-x-3 cursor-pointer hover:bg-gray-100 p-2 rounded"
       onClick={() => setSelectedChatRoom(chatRoom.id)}
-      className="text-2xl mb flex flex-col p-3 border border-white rounded my-2"
     >
-      <div>{chatRoom.name}</div>
+      <img
+        src={BackgroundImg}
+        alt={`Chat room ${chatRoom.id}`}
+        className="w-10 h-10 rounded-full"
+      />
       <div>
-        {chatRoom.last_message} by {chatRoom.last_message_user_id}
+        <p className="font-medium">{chatRoom.name}</p>
+        <p className="text-sm text-gray-500">{chatRoom.last_message}</p>
       </div>
     </div>
   );

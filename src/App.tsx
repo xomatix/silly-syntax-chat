@@ -21,7 +21,7 @@ function App() {
     <>
       {!loggedIn && <Login></Login>}
       {loggedIn && (
-        <div className="w-[100vw] h-[100vh]">
+        <div className="w-full h-full">
           <ChatRoomsList />
         </div>
       )}

@@ -4,14 +4,12 @@ import { ChatMessageNotify, HomeChatRoomModel } from "./controllers/Types";
 import { RealTimeController } from "./controllers/RealTimeController";
 import ChatRoom from "./ChatRoom/ChatRoom";
 import ChatRoomsListElem from "./ChatRoomsListElem/ChatRoomsListElem";
-import BackgroundImg from "./assets/tatry-morskie-oko.jpg";
 
 function ChatRoomsList() {
   const [chatRooms, setChatRooms] = useState<HomeChatRoomModel[]>([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState<number>(0);
   const [recievedMessage, setRecievedMessage] =
     useState<ChatMessageNotify | null>(null);
-  const backgroundImage = "url(" + BackgroundImg + ")";
 
   useEffect(() => {
     async function fetchAsync() {
@@ -42,48 +40,63 @@ function ChatRoomsList() {
   //#endregion
 
   return (
-    <div
-      className="flex h-full w-full items-center justify-center"
-      style={{
-        backgroundImage: backgroundImage,
-        backgroundSize: "cover",
-      }}
-    >
-      <div className="flex p-3 rounded rounded-lg items-center justify-center flex-col m-0 bg-sky-950 bg-opacity-50 backdrop-blur-md">
-        <div className="text-white text-4xl mb-4">Chat rooms under there:</div>
-        <button
-          className="bg-white text-blue-500 px-4 mb-4 py-2 rounded"
-          onClick={handleReload}
-        >
-          download basic data
-        </button>
-        <button
-          className="bg-white text-blue-500 px-4 py-2 rounded"
-          onClick={handleConnectToServer}
-        >
-          Start connection
-        </button>
-        <div className="grid grid-cols-5">
-          <div className="col-span-2">
-            <div className="flex">
-              <input className="m-2 w-full rounded h-10" type="text"></input>
-            </div>
-            {chatRooms.map((chatRoom) => (
+    // <div
+    //   className="flex h-full w-full items-center justify-center"
+    //   style={{
+    //     backgroundImage: backgroundImage,
+    //     backgroundSize: "cover",
+    //   }}
+    // >
+    //   <div className="w-full 2xl:w-[100rem] min-h-dvh 2xl:h-3/4 ">
+    //     <div className="p-5 w-full h-full rounded rounded-lg items-center justify-center flex flex-col bg-sky-950 bg-opacity-50 backdrop-blur-md">
+
+    //       <div className="grid grid-cols-3 w-full h-full">
+    //         <div className="col-span-1 mr-1">
+    //           <div className="flex">
+    //             <input className="m-2 w-full rounded h-10" type="text"></input>
+    //           </div>
+    //           {chatRooms.map((chatRoom) => (
+    //             <ChatRoomsListElem
+    //               key={chatRoom.id}
+    //               chatRoom={chatRoom}
+    //               setSelectedChatRoom={setSelectedChatRoom}
+    //             />
+    //           ))}
+    //         </div>
+
+    //         <div className="border-l-2 pl-1 border-indigo-200 col-span-2 h-[100%]">
+    //           <ChatRoom
+    //             chatRoomId={selectedChatRoom}
+    //             recievedMessage={recievedMessage}
+    //           />
+    //         </div>
+    //       </div>
+    //     </div>
+    //   </div>
+    // </div>
+    <div className="flex h-screen bg-gray-100">
+      {/* Left sidebar */}
+      <div className="w-1/4 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="p-4">
+          <h2 className="text-xl font-semibold mb-4">Chats</h2>
+          {/* Chat room list */}
+          <div className="space-y-4">
+            {chatRooms.map((room) => (
               <ChatRoomsListElem
-                key={chatRoom.id}
-                chatRoom={chatRoom}
+                key={room.id}
+                chatRoom={room}
                 setSelectedChatRoom={setSelectedChatRoom}
               />
             ))}
           </div>
-          <div className="col-span-3 max-h-[100vh]">
-            <ChatRoom
-              chatRoomId={selectedChatRoom}
-              recievedMessage={recievedMessage}
-            />
-          </div>
         </div>
       </div>
+
+      {/* Right main area */}
+      <ChatRoom
+        chatRoomId={selectedChatRoom}
+        recievedMessage={recievedMessage}
+      />
     </div>
   );
 }
