@@ -8,4 +8,4 @@
 
 # Running backend
 
-see `commands.sh`
+see `commands.sh` and run first commented command starting with putty
