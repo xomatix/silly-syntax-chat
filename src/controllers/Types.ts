@@ -75,3 +75,9 @@ export type UserModel = {
   username: string;
   email: string;
 };
+
+export type FileInsertModel = {
+  file: any;
+  ref_id: number;
+  ref_type: string;
+};
