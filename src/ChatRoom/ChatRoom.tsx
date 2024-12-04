@@ -1,20 +1,20 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RecordController } from "../controllers/RecordController";
 import {
   ChatMessage,
   ChatMessageNotify,
   ChatRoomModel,
-  DataInsertModel,
   DataListModel,
-  HomeChatRoomModel,
+  FileModel,
 } from "../controllers/Types";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import BackgroundImg from "../assets/tatry-morskie-oko.jpg";
-import PaperClip from "../assets/paper-clip.svg";
-import Send from "../assets/send.svg";
 import AddUser from "../assets/add-user.svg";
 import PopupComponent from "../Popup/PopupComponent";
 import AddUserToChatRoom from "../CreateChatRoom/AddUserToChatRoom";
+import InputComponent from "./InputComponent";
+import { FilePluginController } from "../controllers/FilePluginController";
+import FileComponent from "./FileComponent";
 
 function ChatRoom({
   chatRoomId,
@@ -26,9 +26,12 @@ function ChatRoom({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatRoom, setChatRoom] = useState<ChatRoomModel>({} as ChatRoomModel);
   const [showAddUser, setShowAddUser] = useState<boolean>(false);
-  const [messageValue, setMessageValue] = useState<string>("");
+  const [messageFiles, setMessageFiles] = useState<Map<number, number>>(
+    new Map<number, number>()
+  );
   const [userID, setUserID] = useState<number>(0);
   const [animationParent] = useAutoAnimate();
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,14 +79,19 @@ function ChatRoom({
     let m: DataListModel = {
       collectionName: "chat_message",
       filter: `chat_room_id = ${chatRoomId} ${filterNewMessages}`,
+      // limit: 5,
     };
 
     let records = await RecordController.GetRecords(m);
     let data: ChatMessage[] = records.data;
     // Append the new messages to the existing ones
+
     if (data != null && data.length > 0) {
-      if (performClear) setMessages([...data]);
-      else setMessages((prevMessages) => [...data, ...prevMessages]);
+      await downloadFilesUnderMessagesInfo(data);
+      if (performClear) await setMessages([...data]);
+      else {
+        await setMessages((prevMessages) => [...data, ...prevMessages]);
+      }
     }
 
     let mChatRoom: DataListModel = {
@@ -95,28 +103,36 @@ function ChatRoom({
     setChatRoom(recordsChatRoom.data[0]);
   };
 
-  const handleSendMessage = async () => {
-    if (messageValue.length <= 0) {
-      return;
-    }
-    let user_id = Number(localStorage.getItem("bonanza_user_id"));
-    if (user_id == null || user_id <= 0) return;
-    let m: DataInsertModel = {
-      collectionName: "chat_message",
-      values: {
-        chat_room_id: chatRoomId,
-        value: messageValue,
-        user_id: user_id,
-      },
-    };
-    await RecordController.InsertData(m);
-    setMessageValue("");
-  };
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
   // Function to scroll to the bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const downloadFilesUnderMessagesInfo = async (messagesArr: ChatMessage[]) => {
+    if (messagesArr.filter((message) => message.is_file).length <= 0) {
+      return;
+    }
+    var ids = messagesArr
+      .filter((message) => message.is_file)
+      .map((message) => message.id)
+      .join(",");
+
+    var files = await FilePluginController.GetRecords({
+      collectionName: "file_storage",
+      filter: `ref_id in (${ids}) and ref_type = 'chat_message'`,
+    });
+
+    if (files.success == false) {
+      return;
+    }
+
+    let array: FileModel[] = files.data;
+    let newObject = messageFiles;
+    for (let index = 0; index < array.length; index++) {
+      const element = array[index];
+      newObject.set(element.ref_id, element.id);
+    }
+    await setMessageFiles(newObject);
   };
   //#endregion
 
@@ -160,11 +176,13 @@ function ChatRoom({
           >
             <div>
               <p
-                className={`max-w-xs lg:max-w-md xl:max-w-lg py-2 px-4 rounded-[20px]  ${
-                  message.user_id === userID
-                    ? "bg-blue-500 text-white "
-                    : "bg-gray-200 text-gray-800 "
-                }
+                className={`max-w-xs lg:max-w-md xl:max-w-lg  rounded-[20px] 
+                  ${message.is_file ? "overflow-hidden" : "py-2 px-4"}
+                  ${
+                    message.user_id === userID
+                      ? "bg-blue-500 text-white "
+                      : "bg-gray-200 text-gray-800 "
+                  }
                     ${
                       index + 1 < messages.length &&
                       messages[index + 1].user_id === message.user_id
@@ -183,7 +201,13 @@ function ChatRoom({
                 }    
                 `}
               >
-                {message.value}
+                {message.is_file && (
+                  <FileComponent
+                    fileID={Number(messageFiles.get(message.id))}
+                    message={message.value}
+                  />
+                )}
+                {!message.is_file && message.value}
               </p>
               <p
                 className={`text-xs mt-1 opacity-75 ${
@@ -201,29 +225,7 @@ function ChatRoom({
       </div>
 
       {/* Input area */}
-      <div className="bg-white border-t border-gray-200 p-4">
-        <div className="flex items-center space-x-2">
-          <button
-            className="rounded-full p-2  hover:bg-yellow-500"
-            onClick={() => alert("Not implemented!!!")}
-          >
-            <img src={PaperClip} alt="Send" className="w-6 h-6" />
-          </button>
-          <input
-            type="text"
-            placeholder="Type a message..."
-            value={messageValue}
-            onChange={(e) => setMessageValue(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            onClick={handleSendMessage}
-            className=" text-white rounded-full p-2 hover:bg-yellow-500"
-          >
-            <img src={Send} alt="Send" className="w-6 h-6" />
-          </button>
-        </div>
-      </div>
+      <InputComponent chatRoomId={chatRoomId} />
 
       {/* Add user popup*/}
       {showAddUser && (

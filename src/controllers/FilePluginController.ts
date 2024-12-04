@@ -13,7 +13,7 @@ export class FilePluginController {
   static GetRecords = async (
     model: DataListModel
   ): Promise<ResponseMessage> => {
-    model.collectionName = "files";
+    model.collectionName = "file_storage";
     return RecordController.GetRecords(model);
   };
 
@@ -68,14 +68,14 @@ export class FilePluginController {
   static UpdateData = async (
     model: DataUpdateModel
   ): Promise<ResponseMessage> => {
-    model.collectionName = "files";
+    model.collectionName = "file_storage";
     return RecordController.UpdateData(model);
   };
 
   static DeleteData = async (
     model: DataDeleteModel
   ): Promise<ResponseMessage> => {
-    model.collectionName = "files";
+    model.collectionName = "file_storage";
     return RecordController.DeleteData(model);
   };
 }

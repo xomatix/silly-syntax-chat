@@ -61,6 +61,7 @@ export interface ChatMessage {
   updated: string;
   user_id: number;
   value: string;
+  is_file: boolean;
 }
 
 export interface ChatMessageNotify {
@@ -78,6 +79,15 @@ export type UserModel = {
 
 export type FileInsertModel = {
   file: any;
+  ref_id: number;
+  ref_type: string;
+};
+
+export type FileModel = {
+  name: any;
+  created: Date;
+  updated: Date;
+  id: number;
   ref_id: number;
   ref_type: string;
 };
