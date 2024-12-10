@@ -203,6 +203,7 @@ function ChatRoom({
               >
                 {message.is_file && (
                   <FileComponent
+                    isAuthor={message.user_id === userID}
                     fileID={Number(messageFiles.get(message.id))}
                     message={message.value}
                   />
