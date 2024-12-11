@@ -62,6 +62,7 @@ export interface ChatMessage {
   user_id: number;
   value: string;
   is_file: boolean;
+  reply_message_id: number;
 }
 
 export interface ChatMessageNotify {

@@ -10,11 +10,13 @@ import {
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import BackgroundImg from "../assets/tatry-morskie-oko.jpg";
 import AddUser from "../assets/add-user.svg";
+import ReplyIcon from "../assets/reply.svg";
 import PopupComponent from "../Popup/PopupComponent";
 import AddUserToChatRoom from "../CreateChatRoom/AddUserToChatRoom";
 import InputComponent from "./InputComponent";
 import { FilePluginController } from "../controllers/FilePluginController";
 import FileComponent from "./FileComponent";
+import ReplayMsgPreview from "./ReplayMsgPreview";
 
 function ChatRoom({
   chatRoomId,
@@ -30,6 +32,7 @@ function ChatRoom({
     new Map<number, number>()
   );
   const [userID, setUserID] = useState<number>(0);
+  const [replyMessage, setReplyMessage] = useState<ChatMessage | null>(null);
   const [animationParent] = useAutoAnimate();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -170,13 +173,26 @@ function ChatRoom({
         {messages.map((message, index) => (
           <div
             key={message.id}
-            className={`flex mt-1 ${
+            className={`flex mt-1 group ${
               message.user_id === userID ? "justify-end" : "justify-start"
-            }`}
+            } `}
           >
             <div>
-              <p
-                className={`max-w-xs lg:max-w-md xl:max-w-lg  rounded-[20px] 
+              <div className="flex items-center">
+                {message.user_id === userID && (
+                  <img
+                    style={{
+                      filter:
+                        "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
+                    }}
+                    src={ReplyIcon}
+                    onClick={() => setReplyMessage(message)}
+                    className="w-6 h-6 pr-2 cursor-pointer hidden group-hover:block"
+                  ></img>
+                )}
+
+                <p
+                  className={`max-w-xs lg:max-w-md xl:max-w-lg  rounded-[20px] 
                   ${message.is_file ? "overflow-hidden" : "py-2 px-4"}
                   ${
                     message.user_id === userID
@@ -200,16 +216,36 @@ function ChatRoom({
                     : ""
                 }    
                 `}
-              >
-                {message.is_file && (
-                  <FileComponent
-                    isAuthor={message.user_id === userID}
-                    fileID={Number(messageFiles.get(message.id))}
-                    message={message.value}
-                  />
+                >
+                  {message.reply_message_id > 0 && (
+                    <ReplayMsgPreview
+                      ReplayMsgId={message.reply_message_id}
+                      isAuthor={message.user_id === userID}
+                    />
+                  )}
+                  {message.is_file && (
+                    <FileComponent
+                      isAuthor={message.user_id === userID}
+                      fileID={Number(messageFiles.get(message.id))}
+                      message={message.value}
+                    />
+                  )}
+                  {!message.is_file && message.value}
+                </p>
+
+                {message.user_id !== userID && (
+                  <img
+                    style={{
+                      filter:
+                        "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
+                    }}
+                    src={ReplyIcon}
+                    onClick={() => setReplyMessage(message)}
+                    className="w-6 h-6 pl-2 cursor-pointer hidden group-hover:block"
+                  ></img>
                 )}
-                {!message.is_file && message.value}
-              </p>
+              </div>
+
               <p
                 className={`text-xs mt-1 opacity-75 ${
                   index - 1 >= 0 &&
@@ -226,7 +262,11 @@ function ChatRoom({
       </div>
 
       {/* Input area */}
-      <InputComponent chatRoomId={chatRoomId} />
+      <InputComponent
+        chatRoomId={chatRoomId}
+        replyMessage={replyMessage}
+        clearReplyMessage={() => setReplyMessage(null)}
+      />
 
       {/* Add user popup*/}
       {showAddUser && (

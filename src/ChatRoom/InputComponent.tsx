@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from "react";
 import PaperClip from "../assets/paper-clip.svg";
 import Send from "../assets/send.svg";
-import { DataInsertModel } from "../controllers/Types";
+import { ChatMessage, DataInsertModel } from "../controllers/Types";
 import { RecordController } from "../controllers/RecordController";
 import { FilePluginController } from "../controllers/FilePluginController";
 
-function InputComponent({ chatRoomId }: { chatRoomId: number }) {
+function InputComponent({
+  chatRoomId,
+  replyMessage,
+  clearReplyMessage,
+}: {
+  chatRoomId: number;
+  replyMessage: ChatMessage | null;
+  clearReplyMessage: () => void;
+}) {
   const [messageValue, setMessageValue] = useState<string>("");
   const [file, setFile] = useState<File | undefined>(undefined);
 
@@ -28,6 +36,9 @@ function InputComponent({ chatRoomId }: { chatRoomId: number }) {
         is_file: file != undefined,
       },
     };
+    if (replyMessage != null && replyMessage.id > 0) {
+      m = { ...m, values: { ...m.values, reply_message_id: replyMessage.id } };
+    }
     let insertedMessage = await RecordController.InsertData(m);
 
     if (file != undefined) {
@@ -40,6 +51,7 @@ function InputComponent({ chatRoomId }: { chatRoomId: number }) {
 
     await setMessageValue("");
     await setFile(undefined);
+    await clearReplyMessage();
   };
 
   const handleSelectFile = (e: any) => {
@@ -61,6 +73,18 @@ function InputComponent({ chatRoomId }: { chatRoomId: number }) {
     <div>
       {/* Input area */}
       <div className="bg-white border-t border-gray-200 p-4">
+        {replyMessage && (
+          <div className="items-center pb-3 relative">
+            <p className="text-md text-gray-900">Replying to</p>
+            <p className="text-md text-gray-600">{replyMessage?.value}</p>
+            <button
+              className="absolute transform  -translate-y-1/4 top-0 right-0 bg-slate-300 text-white rounded-full p-2 hover:bg-red-700"
+              onClick={clearReplyMessage}
+            >
+              ❌
+            </button>
+          </div>
+        )}
         <div className="flex items-center space-x-2">
           <label
             htmlFor="file_input_component"
