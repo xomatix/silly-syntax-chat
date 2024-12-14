@@ -2,7 +2,6 @@ import { BaseUrl } from "./Constants";
 import { RecordController } from "./RecordController";
 import {
   DataDeleteModel,
-  DataInsertModel,
   DataListModel,
   DataUpdateModel,
   FileInsertModel,
@@ -26,9 +25,6 @@ export class FilePluginController {
     const cachedData = localStorage.getItem(cacheKey);
 
     if (cachedData) {
-      if (fileID == 138) {
-        console.log("Found cached data");
-      }
       return base64ToBlob(cachedData);
     }
 
@@ -49,7 +45,11 @@ export class FilePluginController {
       }
       let blb = await response.blob();
       let base64String: string = await blobToBase64(blb);
-      await localStorage.setItem(cacheKey, base64String);
+      try {
+        await localStorage.setItem(cacheKey, base64String);
+      } catch (error) {
+        console.log("Cache exceded size limit:", error);
+      }
 
       return blb;
     });
