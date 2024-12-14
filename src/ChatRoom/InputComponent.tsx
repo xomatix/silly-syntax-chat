@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import PaperClip from "../assets/paper-clip.svg";
 import Send from "../assets/send.svg";
 import { ChatMessage, DataInsertModel } from "../controllers/Types";
@@ -62,7 +62,7 @@ function InputComponent({
   };
 
   const handleChangeMsgValue = async (e: any) => {
-    if (e.target.value.length < messageValue.length) {
+    if (e.target.value.length != messageValue.length && file != undefined) {
       await setFile(undefined);
       await setMessageValue("");
     }
@@ -103,6 +103,9 @@ function InputComponent({
             placeholder="Type a message..."
             value={messageValue}
             onChange={handleChangeMsgValue}
+            onKeyDown={async (e) => {
+              if (e.key === "Enter") await handleSendMessage();
+            }}
             className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
