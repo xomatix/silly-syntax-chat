@@ -27,6 +27,9 @@ function ChatRoom({
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatRoom, setChatRoom] = useState<ChatRoomModel>({} as ChatRoomModel);
+  const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [showAddUser, setShowAddUser] = useState<boolean>(false);
   const [messageFiles, setMessageFiles] = useState<Map<number, number>>(
     new Map<number, number>()
@@ -43,6 +46,9 @@ function ChatRoom({
     };
 
     setMessages([]);
+    setFilteredMessages([]);
+    setSearchTerm("");
+    setIsSearching(false);
     let user_id = Number(localStorage.getItem("bonanza_user_id"));
     setUserID(user_id);
     console.log("downloading chatRoomId messages", chatRoomId);
@@ -64,6 +70,20 @@ function ChatRoom({
       fetchData();
     }
   }, [recievedMessage]);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredMessages(messages);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const searchResults = messages.filter((message) =>
+      message.value.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredMessages(searchResults);
+  }, [searchTerm, messages]);
 
   //#region handlers
   const handleReload = async () => {
@@ -91,9 +111,13 @@ function ChatRoom({
 
     if (data != null && data.length > 0) {
       await downloadFilesUnderMessagesInfo(data);
-      if (performClear) await setMessages([...data]);
+      if (performClear) {
+        await setMessages([...data]);
+        await setFilteredMessages([...data]);
+      }
       else {
         await setMessages((prevMessages) => [...data, ...prevMessages]);
+        await setFilteredMessages((prevMessages) => [...data, ...prevMessages]);
       }
     }
 
@@ -163,6 +187,15 @@ function ChatRoom({
             </button>
           </div>
         </div>
+        <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+          <input
+            type="text"
+            placeholder="Search messages..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-transparent w-full focus:outline-none"
+          />
+        </div>
       </div>
 
       {/* Messages area */}
@@ -170,13 +203,18 @@ function ChatRoom({
         className="flex-1 flex flex-col-reverse overflow-y-auto p-4 "
         ref={animationParent}
       >
-        {messages.map((message, index) => (
-          <div
-            key={message.id}
-            className={`flex mt-1 group ${
-              message.user_id === userID ? "justify-end" : "justify-start"
-            } `}
-          >
+        {isSearching && filteredMessages.length === 0 ? (
+          <div className="text-center text-gray-500 my-4">
+            No messages found for "{searchTerm}"
+          </div>
+        ) : (
+          filteredMessages.map((message, index) => (
+            <div
+              key={message.id}
+              className={`flex mt-1 group ${
+                message.user_id === userID ? "justify-end" : "justify-start"
+              } `}
+            >
             <div>
               <div className="flex items-center">
                 {message.user_id === userID && (
@@ -258,7 +296,8 @@ function ChatRoom({
               </p>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Input area */}
