@@ -1,5 +1,6 @@
-import { BaseUrlWebSocket } from "./Constants";
-import { ChatMessageNotify } from "./Types";
+import { BaseUrl, BaseUrlWebSocket } from "./Constants";
+import { RecordController } from "./RecordController";
+import { ChatMessageNotify, ResponseMessage } from "./Types";
 
 export class RealTimeController {
   static ConnectToServer = async (
@@ -42,5 +43,30 @@ export class RealTimeController {
     } catch (error) {
       console.error("Error connecting to WebSocket:", error);
     }
+  };
+
+  /**
+   * Gets active users from the server. This function will return only active users without currently logged in user
+   * @returns A promise that resolves to a ResponseMessage object containing the list of active users of type active_users that is array ActiveUserModel.
+   */
+  static GetActiveUsers = async (): Promise<ResponseMessage> => {
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    const token = localStorage.getItem("bonanza_token");
+    myHeaders.append("Authorization", token ? token : "");
+    const requestOptions: any = {
+      method: "POST",
+      headers: myHeaders,
+      redirect: "follow",
+      body: JSON.stringify({}),
+      Credentials: "include",
+    };
+    var response = await fetch(
+      BaseUrl + "/api/getActiveUsers",
+      requestOptions
+    ).then((response) => {
+      return response.json();
+    });
+    return response;
   };
 }

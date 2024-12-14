@@ -78,6 +78,10 @@ export type UserModel = {
   email: string;
 };
 
+export type ActiveUserModel = UserModel & {
+  profile_picture_id: Number | null;
+};
+
 export type FileInsertModel = {
   file: any;
   ref_id: number;
