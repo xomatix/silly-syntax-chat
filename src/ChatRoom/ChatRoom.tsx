@@ -27,17 +27,33 @@ function ChatRoom({
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatRoom, setChatRoom] = useState<ChatRoomModel>({} as ChatRoomModel);
-  const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
   const [showAddUser, setShowAddUser] = useState<boolean>(false);
   const [messageFiles, setMessageFiles] = useState<Map<number, number>>(
     new Map<number, number>()
   );
   const [userID, setUserID] = useState<number>(0);
   const [replyMessage, setReplyMessage] = useState<ChatMessage | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editedMessageText, setEditedMessageText] = useState<string>('');
   const [animationParent] = useAutoAnimate();
+  const [showMenu, setShowMenu] = useState<number | null>(null); 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const menuRef = useRef<HTMLDivElement | null>(null); 
+
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(null); 
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,14 +62,9 @@ function ChatRoom({
     };
 
     setMessages([]);
-    setFilteredMessages([]);
-    setSearchTerm("");
-    setIsSearching(false);
     let user_id = Number(localStorage.getItem("bonanza_user_id"));
     setUserID(user_id);
-    console.log("downloading chatRoomId messages", chatRoomId);
 
-    // Reset messages when chatRoomId changes
     fetchData();
   }, [chatRoomId]);
 
@@ -61,7 +72,6 @@ function ChatRoom({
     const fetchData = async () => {
       await handleReload();
     };
-    console.log("recievedMessage change", recievedMessage);
 
     if (
       recievedMessage != null &&
@@ -71,27 +81,11 @@ function ChatRoom({
     }
   }, [recievedMessage]);
 
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredMessages(messages);
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const searchResults = messages.filter((message) =>
-      message.value.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredMessages(searchResults);
-  }, [searchTerm, messages]);
-
-  //#region handlers
   const handleReload = async () => {
     let performClear = true;
     if (messages.length > 0 && messages[0].chat_room_id === chatRoomId) {
       performClear = false;
     }
-    console.log("performClear", performClear);
 
     let filterNewMessages = "";
     if (messages.length > 0 && !performClear) {
@@ -102,21 +96,15 @@ function ChatRoom({
     let m: DataListModel = {
       collectionName: "chat_message",
       filter: `chat_room_id = ${chatRoomId} ${filterNewMessages}`,
-      // limit: 5,
     };
 
     let records = await RecordController.GetRecords(m);
     let data: ChatMessage[] = records.data;
-    // Append the new messages to the existing ones
-
     if (data != null && data.length > 0) {
       await downloadFilesUnderMessagesInfo(data);
-      if (performClear) {
-        await setMessages([...data]);
-        await setFilteredMessages([...data]);
-      } else {
+      if (performClear) await setMessages([...data]);
+      else {
         await setMessages((prevMessages) => [...data, ...prevMessages]);
-        await setFilteredMessages((prevMessages) => [...data, ...prevMessages]);
       }
     }
 
@@ -129,7 +117,6 @@ function ChatRoom({
     setChatRoom(recordsChatRoom.data[0]);
   };
 
-  // Function to scroll to the bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -160,11 +147,63 @@ function ChatRoom({
     }
     await setMessageFiles(newObject);
   };
-  //#endregion
+
+  const handleEditMessage = (messageID: number, currentValue: string) => {
+    setEditingMessageId(messageID);
+    setEditedMessageText(currentValue);
+    setShowMenu(null); 
+  };
+
+  const handleSaveEditMessage = async () => {
+    if (editingMessageId === null || editedMessageText === '') return;
+
+    const updatedMessages = messages.map((message) =>
+      message.id === editingMessageId
+        ? { ...message, value: editedMessageText }
+        : message
+    );
+    setMessages(updatedMessages);
+
+    const response = await RecordController.UpdateData({
+      ID: editingMessageId,
+      collectionName: "chat_message",
+      values: {
+        value: editedMessageText,
+      },
+    });
+
+    if (!response.success) {
+      alert("Failed to update the message");
+    }
+
+    setEditingMessageId(null);
+    setEditedMessageText('');
+    setShowMenu(null); 
+  };
+
+  const handleDeleteMessage = async (messageID: number) => {
+    const updatedMessages = messages.filter((message) => message.id !== messageID);
+    setMessages(updatedMessages);
+
+    const response = await RecordController.DeleteData({
+      ID: messageID,
+      collectionName: "chat_message",
+    });
+
+    if (!response.success) {
+      alert("Failed to delete the message");
+    }
+
+    setShowMenu(null);
+  };
+
+  const handleReplyMessage = (message: ChatMessage) => {
+    setReplyMessage(message);
+    setShowMenu(null);
+  };
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Chat room header */}
       <div className="bg-white border-b border-gray-200 p-4 flex items-center space-x-4">
         <div className="flex justify-between w-full">
           <div className="flex items-center space-x-4">
@@ -173,20 +212,9 @@ function ChatRoom({
               alt="Selected chat room"
               className="w-12 h-12 rounded-full"
             />
-            <h2 className="text-xl font-semibold">
-              Selected Chat Room {chatRoomId}
-            </h2>
+            <h2 className="text-xl font-semibold">Selected Chat Room {chatRoomId}</h2>
           </div>
           <div className="flex space-x-2">
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent w-full outline-none focus:w-80 transition-all duration-500 ease-in-out"
-              />
-            </div>
             <button
               onClick={() => setShowAddUser(true)}
               className="text-white rounded-full p-3 hover:bg-yellow-500"
@@ -197,62 +225,79 @@ function ChatRoom({
         </div>
       </div>
 
-      {/* Messages area */}
       <div
-        className="flex-1 flex flex-col-reverse overflow-y-auto p-4 "
+        className="flex-1 flex flex-col-reverse overflow-y-auto p-4"
         ref={animationParent}
       >
-        {isSearching && filteredMessages.length === 0 ? (
-          <div className="text-center text-gray-500 my-4">
-            No messages found for "{searchTerm}"
-          </div>
-        ) : (
-          filteredMessages.map((message, index) => (
-            <div
-              key={message.id}
-              className={`flex mt-1 group ${
-                message.user_id === userID ? "justify-end" : "justify-start"
-              } `}
-            >
-              <div>
-                <div className="flex items-center">
-                  {message.user_id === userID && (
-                    <img
-                      style={{
-                        filter:
-                          "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
-                      }}
-                      src={ReplyIcon}
-                      onClick={() => setReplyMessage(message)}
-                      className="w-6 h-6 pr-2 cursor-pointer hidden group-hover:block"
-                    ></img>
-                  )}
+        {messages.map((message, index) => (
+          <div
+            key={message.id}
+            className={`flex mt-1 group ${
+              message.user_id === userID ? "justify-end" : "justify-start"
+            } relative`}
+          >
+            <div>
+              <div className="flex items-center space-x-2">
+                {message.user_id === userID && (
+                  <>
+                    {/* Three dots button */}
+                    <button
+                      onClick={() => setShowMenu(showMenu === message.id ? null : message.id)}
+                      className="text-gray-600 hover:bg-gray-200 rounded-full p-2"
+                    >
+                      ...
+                    </button>
 
+                    {/* Edit, Delete, and Reply Menu */}
+                    {showMenu === message.id && (
+                      <div
+                        ref={menuRef}
+                        className="absolute bg-white shadow-md rounded-md mt-2 right-0 bottom-full"
+                      >
+                        <button
+                          onClick={() => handleReplyMessage(message)}
+                          className="block w-full text-left p-2 hover:bg-blue-100"
+                        >
+                          Reply
+                        </button>
+                        <button
+                          onClick={() => handleEditMessage(message.id, message.value)}
+                          className="block w-full text-left p-2 hover:bg-yellow-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="block w-full text-left p-2 hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {editingMessageId === message.id ? (
+                  <div>
+                    <textarea
+                      value={editedMessageText}
+                      onChange={(e) => setEditedMessageText(e.target.value)}
+                      rows={4}
+                      className="w-full p-2 border rounded-md"
+                    />
+                    <button
+                      onClick={handleSaveEditMessage}
+                      className="mt-2 text-blue-500 hover:bg-blue-200 p-2 rounded"
+                    >
+                      Save
+                    </button>
+                  </div>
+                ) : (
                   <p
                     className={`max-w-xs lg:max-w-md xl:max-w-lg  rounded-[20px] 
-                  ${message.is_file ? "overflow-hidden" : "py-2 px-4"}
-                  ${
-                    message.user_id === userID
-                      ? "bg-blue-500 text-white "
-                      : "bg-gray-200 text-gray-800 "
-                  }
-                    ${
-                      index + 1 < messages.length &&
-                      messages[index + 1].user_id === message.user_id
-                        ? message.user_id === userID
-                          ? "rounded-tr-[4px]"
-                          : "rounded-tl-[4px]"
-                        : ""
-                    } 
-                ${
-                  index - 1 >= 0 &&
-                  messages[index - 1].user_id === message.user_id
-                    ? message.user_id === userID
-                      ? "rounded-br-[4px]"
-                      : "rounded-bl-[4px]"
-                    : ""
-                }    
-                `}
+                    ${message.is_file ? "overflow-hidden" : "py-2 px-4"}
+                    ${message.user_id === userID ? "bg-blue-500 text-white " : "bg-gray-200 text-gray-800 "}
+                  `}
                   >
                     {message.reply_message_id > 0 && (
                       <ReplayMsgPreview
@@ -269,51 +314,35 @@ function ChatRoom({
                     )}
                     {!message.is_file && message.value}
                   </p>
-
-                  {message.user_id !== userID && (
-                    <img
-                      style={{
-                        filter:
-                          "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
-                      }}
-                      src={ReplyIcon}
-                      onClick={() => setReplyMessage(message)}
-                      className="w-6 h-6 pl-2 cursor-pointer hidden group-hover:block"
-                    ></img>
-                  )}
-                </div>
-
-                <p
-                  className={`text-xs mt-1 opacity-75 ${
-                    index - 1 >= 0 &&
-                    messages[index - 1].user_id === message.user_id
-                      ? "hidden"
-                      : ""
-                  }`}
-                >
-                  {message.created.split("T")[1].replace("Z", "")}
-                </p>
+                )}
               </div>
+
+              <p
+                className={`text-xs mt-1 opacity-75 ${
+                  index - 1 >= 0 && messages[index - 1].user_id === message.user_id
+                    ? "hidden"
+                    : ""
+                }`}
+              >
+                {message.created.split("T")[1].replace("Z", "")}
+              </p>
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
 
-      {/* Input area */}
       <InputComponent
         chatRoomId={chatRoomId}
         replyMessage={replyMessage}
         clearReplyMessage={() => setReplyMessage(null)}
       />
 
-      {/* Add user popup*/}
       {showAddUser && (
         <PopupComponent onClose={() => setShowAddUser(false)}>
           <AddUserToChatRoom
             chatRoomId={chatRoomId}
             onClose={() => {
               setShowAddUser(false);
-              //handleReload();
             }}
           />
         </PopupComponent>
