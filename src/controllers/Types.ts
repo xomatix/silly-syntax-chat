@@ -68,6 +68,7 @@ export interface ChatMessage {
 export interface ChatMessageNotify {
   chat_room_id: number;
   message_id: number;
+  message_type: string;
 }
 
 export type UserModel = {
