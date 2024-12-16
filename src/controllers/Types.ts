@@ -68,7 +68,6 @@ export interface ChatMessage {
 export interface ChatMessageNotify {
   chat_room_id: number;
   message_id: number;
-  message_type: string;
 }
 
 export type UserModel = {
@@ -78,10 +77,6 @@ export type UserModel = {
   updated: Date;
   username: string;
   email: string;
-};
-
-export type ActiveUserModel = UserModel & {
-  profile_picture_id: Number | null;
 };
 
 export type FileInsertModel = {

@@ -114,7 +114,8 @@ function ChatRoom({
       if (performClear) {
         await setMessages([...data]);
         await setFilteredMessages([...data]);
-      } else {
+      }
+      else {
         await setMessages((prevMessages) => [...data, ...prevMessages]);
         await setFilteredMessages((prevMessages) => [...data, ...prevMessages]);
       }
@@ -178,15 +179,6 @@ function ChatRoom({
             </h2>
           </div>
           <div className="flex space-x-2">
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent w-full outline-none focus:w-80 transition-all duration-500 ease-in-out"
-              />
-            </div>
             <button
               onClick={() => setShowAddUser(true)}
               className="text-white rounded-full p-3 hover:bg-yellow-500"
@@ -194,6 +186,15 @@ function ChatRoom({
               <img src={AddUser} alt="Add chat-rooom" className="w-6 h-6" />
             </button>
           </div>
+        </div>
+        <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+          <input
+            type="text"
+            placeholder="Search messages..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-transparent w-full focus:outline-none"
+          />
         </div>
       </div>
 
@@ -214,22 +215,22 @@ function ChatRoom({
                 message.user_id === userID ? "justify-end" : "justify-start"
               } `}
             >
-              <div>
-                <div className="flex items-center">
-                  {message.user_id === userID && (
-                    <img
-                      style={{
-                        filter:
-                          "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
-                      }}
-                      src={ReplyIcon}
-                      onClick={() => setReplyMessage(message)}
-                      className="w-6 h-6 pr-2 cursor-pointer hidden group-hover:block"
-                    ></img>
-                  )}
+            <div>
+              <div className="flex items-center">
+                {message.user_id === userID && (
+                  <img
+                    style={{
+                      filter:
+                        "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
+                    }}
+                    src={ReplyIcon}
+                    onClick={() => setReplyMessage(message)}
+                    className="w-6 h-6 pr-2 cursor-pointer hidden group-hover:block"
+                  ></img>
+                )}
 
-                  <p
-                    className={`max-w-xs lg:max-w-md xl:max-w-lg  rounded-[20px] 
+                <p
+                  className={`max-w-xs lg:max-w-md xl:max-w-lg  rounded-[20px] 
                   ${message.is_file ? "overflow-hidden" : "py-2 px-4"}
                   ${
                     message.user_id === userID
@@ -253,48 +254,48 @@ function ChatRoom({
                     : ""
                 }    
                 `}
-                  >
-                    {message.reply_message_id > 0 && (
-                      <ReplayMsgPreview
-                        ReplayMsgId={message.reply_message_id}
-                        isAuthor={message.user_id === userID}
-                      />
-                    )}
-                    {message.is_file && (
-                      <FileComponent
-                        isAuthor={message.user_id === userID}
-                        fileID={Number(messageFiles.get(message.id))}
-                        message={message.value}
-                      />
-                    )}
-                    {!message.is_file && message.value}
-                  </p>
-
-                  {message.user_id !== userID && (
-                    <img
-                      style={{
-                        filter:
-                          "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
-                      }}
-                      src={ReplyIcon}
-                      onClick={() => setReplyMessage(message)}
-                      className="w-6 h-6 pl-2 cursor-pointer hidden group-hover:block"
-                    ></img>
-                  )}
-                </div>
-
-                <p
-                  className={`text-xs mt-1 opacity-75 ${
-                    index - 1 >= 0 &&
-                    messages[index - 1].user_id === message.user_id
-                      ? "hidden"
-                      : ""
-                  }`}
                 >
-                  {message.created.split("T")[1].replace("Z", "")}
+                  {message.reply_message_id > 0 && (
+                    <ReplayMsgPreview
+                      ReplayMsgId={message.reply_message_id}
+                      isAuthor={message.user_id === userID}
+                    />
+                  )}
+                  {message.is_file && (
+                    <FileComponent
+                      isAuthor={message.user_id === userID}
+                      fileID={Number(messageFiles.get(message.id))}
+                      message={message.value}
+                    />
+                  )}
+                  {!message.is_file && message.value}
                 </p>
+
+                {message.user_id !== userID && (
+                  <img
+                    style={{
+                      filter:
+                        "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
+                    }}
+                    src={ReplyIcon}
+                    onClick={() => setReplyMessage(message)}
+                    className="w-6 h-6 pl-2 cursor-pointer hidden group-hover:block"
+                  ></img>
+                )}
               </div>
+
+              <p
+                className={`text-xs mt-1 opacity-75 ${
+                  index - 1 >= 0 &&
+                  messages[index - 1].user_id === message.user_id
+                    ? "hidden"
+                    : ""
+                }`}
+              >
+                {message.created.split("T")[1].replace("Z", "")}
+              </p>
             </div>
+          </div>
           ))
         )}
       </div>
