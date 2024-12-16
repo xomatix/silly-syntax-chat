@@ -71,6 +71,7 @@ export interface ChatMessageNotify {
 }
 
 export type UserModel = {
+  password: string;
   id: number;
   created: Date;
   updated: Date;
