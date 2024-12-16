@@ -9,14 +9,13 @@ import ChatAdd from "./assets/chat-add.svg";
 import Logout from "./assets/logout.svg";
 import PopupComponent from "./Popup/PopupComponent";
 import CreateChatRoom from "./CreateChatRoom/CreateChatRoom";
-import ProfileSettings from "./ProfileEdit/ProfileSettings";
 
 function ChatRoomsList() {
   const [chatRooms, setChatRooms] = useState<HomeChatRoomModel[]>([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState<number>(0);
   const [showAddChatRoom, setShowAddChatRoom] = useState<boolean>(false);
-  const [showEditProfile, setShowEditProfile] = useState<boolean>(false);
-  const [recievedMessage, setRecievedMessage] = useState<ChatMessageNotify | null>(null);
+  const [recievedMessage, setRecievedMessage] =
+    useState<ChatMessageNotify | null>(null);
 
   useEffect(() => {
     async function fetchAsync() {
@@ -47,10 +46,6 @@ function ChatRoomsList() {
 
   const handleAddChatRoom = () => {
     setShowAddChatRoom(true);
-  };
-
-  const handleEditProfile = () => {
-    setShowEditProfile(true); // Show the Edit Profile popup
   };
 
   const handleLogout = async () => {
@@ -92,18 +87,14 @@ function ChatRoomsList() {
               />
             ))}
           </div>
-          {/* Edit Profile Button */}
-          <button
-            onClick={handleEditProfile}
-            className="text-white bg-blue-500 p-2 rounded-md hover:bg-blue-600 mt-4"
-          >
-            Edit Profile
-          </button>
         </div>
       </div>
 
       {/* Right main area */}
-      <ChatRoom chatRoomId={selectedChatRoom} recievedMessage={recievedMessage} />
+      <ChatRoom
+        chatRoomId={selectedChatRoom}
+        recievedMessage={recievedMessage}
+      />
 
       {showAddChatRoom && (
         <PopupComponent onClose={() => setShowAddChatRoom(false)}>
@@ -113,12 +104,6 @@ function ChatRoomsList() {
               handleReload();
             }}
           />
-        </PopupComponent>
-      )}
-
-      {showEditProfile && (
-        <PopupComponent onClose={() => setShowEditProfile(false)}>
-          <ProfileSettings onClose={() => setShowEditProfile(false)} />
         </PopupComponent>
       )}
     </div>
