@@ -17,6 +17,7 @@ import InputComponent from "./InputComponent";
 import { FilePluginController } from "../controllers/FilePluginController";
 import FileComponent from "./FileComponent";
 import ReplayMsgPreview from "./ReplayMsgPreview";
+import ProfileSettings from "../ProfileEdit/ProfileSettings";
 
 function ChatRoom({
   chatRoomId,
@@ -31,6 +32,7 @@ function ChatRoom({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [showAddUser, setShowAddUser] = useState<boolean>(false);
+  const [showProfileSettings, setShowProfileSettings] = useState<boolean>(false); // Add state for ProfileSettings
   const [messageFiles, setMessageFiles] = useState<Map<number, number>>(
     new Map<number, number>()
   );
@@ -129,11 +131,6 @@ function ChatRoom({
     setChatRoom(recordsChatRoom.data[0]);
   };
 
-  // Function to scroll to the bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const downloadFilesUnderMessagesInfo = async (messagesArr: ChatMessage[]) => {
     if (messagesArr.filter((message) => message.is_file).length <= 0) {
       return;
@@ -160,6 +157,11 @@ function ChatRoom({
     }
     await setMessageFiles(newObject);
   };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   //#endregion
 
   return (
@@ -178,15 +180,6 @@ function ChatRoom({
             </h2>
           </div>
           <div className="flex space-x-2">
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent w-full outline-none focus:w-80 transition-all duration-500 ease-in-out"
-              />
-            </div>
             <button
               onClick={() => setShowAddUser(true)}
               className="text-white rounded-full p-3 hover:bg-yellow-500"
@@ -195,6 +188,22 @@ function ChatRoom({
             </button>
           </div>
         </div>
+        <div className="flex items-center bg-gray-100 rounded-full px-4 py-2 space-x-2">
+          <input
+            type="text"
+            placeholder="Search messages..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-transparent w-full focus:outline-none"
+          />
+          
+        </div>
+        <button
+            onClick={() => setShowProfileSettings(true)}
+            className="text-sm font-medium text-white bg-gray-500 px-4 py-2 rounded-md hover:bg-blue-600"
+          >
+            Edit Profile
+          </button>
       </div>
 
       {/* Messages area */}
@@ -316,6 +325,13 @@ function ChatRoom({
               //handleReload();
             }}
           />
+        </PopupComponent>
+      )}
+
+      {/* Profile Settings popup */}
+      {showProfileSettings && (
+        <PopupComponent onClose={() => setShowProfileSettings(false)}>
+          <ProfileSettings onClose={() => setShowProfileSettings(false)} />
         </PopupComponent>
       )}
     </div>

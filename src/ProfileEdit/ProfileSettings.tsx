@@ -7,6 +7,7 @@ interface ProfileSettingsProps {
   onClose: () => void;
 }
 
+
 const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
   const [profileUserName, setUserName] = useState<string>("");
   const [profileEmail, setEmail] = useState<string>("");
@@ -120,12 +121,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
     <div className="flex flex-col bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Edit Profile</h2>
-        <button
-          className="text-gray-500 hover:text-gray-700 focus:outline-none"
-          onClick={onClose}
-        >
-          &times;
-        </button>
+        
       </div>
 
       {message && <p className="text-green-600 text-sm mb-4">{message}</p>}
@@ -141,7 +137,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
             name="username"
             value={profileUserName}
             onChange={handleInputChange}
-            className="mt-1 p-2 border rounded-md w-full focus:ring-2 focus:ring-blue-500"
+            className="flex items-center bg-gray-100 rounded-full px-4 py-2"
             required
           />
         </div>
@@ -156,7 +152,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
             name="email"
             value={profileEmail}
             onChange={handleInputChange}
-            className="mt-1 p-2 border rounded-md w-full focus:ring-2 focus:ring-blue-500"
+            className="flex items-center bg-gray-100 rounded-full px-4 py-2"
             required
           />
         </div>
@@ -171,7 +167,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
             name="password"
             value={profilePassword}
             onChange={handleInputChange}
-            className="mt-1 p-2 border rounded-md w-full focus:ring-2 focus:ring-blue-500"
+            className="flex items-center bg-gray-100 rounded-full px-4 py-2"
             required
           />
         </div>
@@ -184,7 +180,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
             type="file"
             accept="image/*"
             onChange={handlePictureChange}
-            className="mt-1 p-2 border rounded-md w-full focus:ring-2 focus:ring-blue-500"
+            className=""
           />
           {profilePicture && (
             <div className="mt-2 text-sm text-gray-600">
@@ -204,7 +200,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none ${isLoading ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'}`}
+            className={`px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none ${isLoading ? 'bg-gray-400' : 'bg-gray-500 hover:bg-gray-600'}`}
           >
             {isLoading ? "Saving..." : "Save Changes"}
           </button>
