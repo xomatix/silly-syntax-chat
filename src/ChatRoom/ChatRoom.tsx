@@ -36,8 +36,27 @@ function ChatRoom({
   );
   const [userID, setUserID] = useState<number>(0);
   const [replyMessage, setReplyMessage] = useState<ChatMessage | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editedMessageText, setEditedMessageText] = useState<string>("");
   const [animationParent] = useAutoAnimate();
+  const [showMenu, setShowMenu] = useState<number | null>(null); // Track which message has the menu
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null); // Ref for the dropdown menu
+
+  
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(null); // Close the menu if clicked outside
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -102,20 +121,17 @@ function ChatRoom({
     let m: DataListModel = {
       collectionName: "chat_message",
       filter: `chat_room_id = ${chatRoomId} ${filterNewMessages}`,
-      // limit: 5,
     };
 
     let records = await RecordController.GetRecords(m);
     let data: ChatMessage[] = records.data;
-    // Append the new messages to the existing ones
 
     if (data != null && data.length > 0) {
       await downloadFilesUnderMessagesInfo(data);
       if (performClear) {
         await setMessages([...data]);
         await setFilteredMessages([...data]);
-      }
-      else {
+      } else {
         await setMessages((prevMessages) => [...data, ...prevMessages]);
         await setFilteredMessages((prevMessages) => [...data, ...prevMessages]);
       }
@@ -161,6 +177,82 @@ function ChatRoom({
     }
     await setMessageFiles(newObject);
   };
+
+  const handleEditMessage = (messageID: number, currentValue: string) => {
+    setEditingMessageId(messageID);
+    setEditedMessageText(currentValue);
+    setShowMenu(null); // Close the menu when edit is clicked
+  };
+
+  const handleSaveEditMessage = async () => {
+    if (editingMessageId === null || editedMessageText.trim() === "") {
+      console.error("EditingMessageId or EditedMessageText is invalid");
+      return;
+    }
+
+    try {
+
+      setMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === editingMessageId
+            ? { ...message, value: editedMessageText }
+            : message
+        )
+      );
+
+      const response = await RecordController.UpdateData({
+        ID: editingMessageId,
+        collectionName: "chat_message",
+        values: {
+          value: editedMessageText,
+        },
+      });
+
+      if (!response.success) {
+        // Revert changes if API fails
+        alert("Failed to update the message");
+        return;
+      }
+    } catch (error) {
+      console.error("Error saving the edited message:", error);
+    } finally {
+      setEditingMessageId(null);
+      setEditedMessageText("");
+      setShowMenu(null);
+    }
+  };
+
+  const handleDeleteMessage = async (messageID: number) => {
+    const updatedMessages = messages.filter((message) => message.id !== messageID);
+    setMessages(updatedMessages);
+
+    try {
+      // API Call to delete the message
+      const response = await RecordController.DeleteData({
+        ID: messageID,
+        collectionName: "chat_message",
+      });
+
+      if (!response.success) {
+        // Revert changes if API fails
+        alert("Failed to delete the message");
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          messages.find((message) => message.id === messageID)!,
+        ]); // Revert the deleted message
+        return;
+      }
+    } catch (error) {
+      console.error("Error deleting the message:", error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        messages.find((message) => message.id === messageID)!,
+      ]);
+    }
+
+    setShowMenu(null);
+  };
+
   //#endregion
 
   return (
@@ -174,11 +266,22 @@ function ChatRoom({
               alt="Selected chat room"
               className="w-12 h-12 rounded-full"
             />
+            {/* Online Status Icon */}
+            <span className="w-4 h-4 rounded-full bg-green-500 border-2 border-white"></span>
             <h2 className="text-xl font-semibold">
               Selected Chat Room {chatRoomId}
             </h2>
           </div>
           <div className="flex space-x-2">
+            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
+              <input
+                type="text"
+                placeholder="Search messages..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent w-full outline-none focus:w-80 transition-all duration-500 ease-in-out"
+              />
+            </div>
             <button
               onClick={() => setShowAddUser(true)}
               className="text-white rounded-full p-3 hover:bg-yellow-500"
@@ -187,22 +290,8 @@ function ChatRoom({
             </button>
           </div>
         </div>
-        <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-          <input
-            type="text"
-            placeholder="Search messages..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent w-full focus:outline-none"
-          />
-        </div>
       </div>
-
-      {/* Messages area */}
-      <div
-        className="flex-1 flex flex-col-reverse overflow-y-auto p-4 "
-        ref={animationParent}
-      >
+      <div className="flex-1 flex flex-col-reverse overflow-y-auto p-4" ref={animationParent}>
         {isSearching && filteredMessages.length === 0 ? (
           <div className="text-center text-gray-500 my-4">
             No messages found for "{searchTerm}"
@@ -213,100 +302,157 @@ function ChatRoom({
               key={message.id}
               className={`flex mt-1 group ${
                 message.user_id === userID ? "justify-end" : "justify-start"
-              } `}
+              } relative`}
             >
-            <div>
-              <div className="flex items-center">
-                {message.user_id === userID && (
-                  <img
-                    style={{
-                      filter:
-                        "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
-                    }}
-                    src={ReplyIcon}
-                    onClick={() => setReplyMessage(message)}
-                    className="w-6 h-6 pr-2 cursor-pointer hidden group-hover:block"
-                  ></img>
-                )}
-
+              <div>
+                <div className="flex items-center space-x-2">
+                  {/* Conditional for reply icon (to the left of three dots for current user's message) */}
+                  {message.user_id === userID && (
+                    <img
+                      style={{
+                        filter:
+                          "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
+                      }}
+                      src={ReplyIcon}
+                      onClick={() => setReplyMessage(message)}
+                      className="w-6 h-6 pr-2 cursor-pointer group-hover:block"
+                    />
+                  )}
+  
+                  {/* Three dots button for menu */}
+                  {message.user_id === userID && (
+                    <div className="relative">
+                      <button
+                        onClick={() =>
+                          setShowMenu(showMenu === message.id ? null : message.id)
+                        }
+                        className="text-gray-600 hover:bg-gray-200 rounded-full p-2"
+                      >
+                        ...
+                      </button>
+  
+                      {/* Edit and Delete Menu positioned above the three dots */}
+                      {showMenu === message.id && (
+                        <div
+                          ref={menuRef}
+                          className="absolute bg-white shadow-md rounded-md mt-2 bottom-full left-0 z-50"
+                        >
+                          <button
+                            onClick={() =>
+                              handleEditMessage(message.id, message.value)
+                            }
+                            className="block w-full text-left p-2 hover:bg-yellow-100"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMessage(message.id)}
+                            className="block w-full text-left p-2 hover:bg-red-100"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+  
+                  {/* Conditionally show editing area */}
+                  {editingMessageId === message.id ? (
+                    <div>
+                      <textarea
+                        value={editedMessageText}
+                        onChange={(e) => setEditedMessageText(e.target.value)}
+                        rows={4}
+                        className="w-full p-2 border rounded-md"
+                      />
+                      <button
+                        onClick={handleSaveEditMessage}
+                        className="mt-2 text-blue-500 hover:bg-blue-200 p-2 rounded"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <p
+                      className={`max-w-xs lg:max-w-md xl:max-w-lg rounded-[20px] ${
+                        message.is_file ? "overflow-hidden" : "py-2 px-4"
+                      } ${
+                        message.user_id === userID
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-gray-800"
+                      } ${
+                        index + 1 < messages.length &&
+                        messages[index + 1].user_id === message.user_id
+                          ? message.user_id === userID
+                            ? "rounded-tr-[4px]"
+                            : "rounded-tl-[4px]"
+                          : ""
+                      } ${
+                        index - 1 >= 0 &&
+                        messages[index - 1].user_id === message.user_id
+                          ? message.user_id === userID
+                            ? "rounded-br-[4px]"
+                            : "rounded-bl-[4px]"
+                          : ""
+                      }`}
+                    >
+                      {/* Reply Preview */}
+                      {message.reply_message_id > 0 && (
+                        <ReplayMsgPreview
+                          ReplayMsgId={message.reply_message_id}
+                          isAuthor={message.user_id === userID}
+                        />
+                      )}
+                      {/* File Component */}
+                      {message.is_file && (
+                        <FileComponent
+                          isAuthor={message.user_id === userID}
+                          fileID={Number(messageFiles.get(message.id))}
+                          message={message.value}
+                        />
+                      )}
+                      {/* Text Message */}
+                      {!message.is_file && message.value}
+                    </p>
+                  )}
+  
+                  {/* Reply icon (for other users' messages) */}
+                  {message.user_id !== userID && (
+                    <img
+                      style={{
+                        filter:
+                          "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
+                      }}
+                      src={ReplyIcon}
+                      onClick={() => setReplyMessage(message)}
+                      className="w-6 h-6 pl-2 cursor-pointer hidden group-hover:block"
+                    />
+                  )}
+                </div>
+  
+                {/* Time Stamp */}
                 <p
-                  className={`max-w-xs lg:max-w-md xl:max-w-lg  rounded-[20px] 
-                  ${message.is_file ? "overflow-hidden" : "py-2 px-4"}
-                  ${
-                    message.user_id === userID
-                      ? "bg-blue-500 text-white "
-                      : "bg-gray-200 text-gray-800 "
-                  }
-                    ${
-                      index + 1 < messages.length &&
-                      messages[index + 1].user_id === message.user_id
-                        ? message.user_id === userID
-                          ? "rounded-tr-[4px]"
-                          : "rounded-tl-[4px]"
-                        : ""
-                    } 
-                ${
-                  index - 1 >= 0 &&
-                  messages[index - 1].user_id === message.user_id
-                    ? message.user_id === userID
-                      ? "rounded-br-[4px]"
-                      : "rounded-bl-[4px]"
-                    : ""
-                }    
-                `}
+                  className={`text-xs mt-1 opacity-75 ${
+                    index - 1 >= 0 && messages[index - 1].user_id === message.user_id
+                      ? "hidden"
+                      : ""
+                  }`}
                 >
-                  {message.reply_message_id > 0 && (
-                    <ReplayMsgPreview
-                      ReplayMsgId={message.reply_message_id}
-                      isAuthor={message.user_id === userID}
-                    />
-                  )}
-                  {message.is_file && (
-                    <FileComponent
-                      isAuthor={message.user_id === userID}
-                      fileID={Number(messageFiles.get(message.id))}
-                      message={message.value}
-                    />
-                  )}
-                  {!message.is_file && message.value}
+                  {message.created.split("T")[1].replace("Z", "")}
                 </p>
-
-                {message.user_id !== userID && (
-                  <img
-                    style={{
-                      filter:
-                        "invert(42%) sepia(1%) saturate(0%) hue-rotate(351deg) brightness(92%) contrast(90%)",
-                    }}
-                    src={ReplyIcon}
-                    onClick={() => setReplyMessage(message)}
-                    className="w-6 h-6 pl-2 cursor-pointer hidden group-hover:block"
-                  ></img>
-                )}
               </div>
-
-              <p
-                className={`text-xs mt-1 opacity-75 ${
-                  index - 1 >= 0 &&
-                  messages[index - 1].user_id === message.user_id
-                    ? "hidden"
-                    : ""
-                }`}
-              >
-                {message.created.split("T")[1].replace("Z", "")}
-              </p>
             </div>
-          </div>
           ))
         )}
       </div>
-
+  
       {/* Input area */}
       <InputComponent
         chatRoomId={chatRoomId}
         replyMessage={replyMessage}
         clearReplyMessage={() => setReplyMessage(null)}
       />
-
+  
       {/* Add user popup*/}
       {showAddUser && (
         <PopupComponent onClose={() => setShowAddUser(false)}>
