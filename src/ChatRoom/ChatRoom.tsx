@@ -26,7 +26,7 @@ function ChatRoom({
   recievedMessage: ChatMessageNotify | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [chatRoom, setChatRoom] = useState<ChatRoomModel>({} as ChatRoomModel);
+  const [_, setChatRoom] = useState<ChatRoomModel>({} as ChatRoomModel);
   const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -43,7 +43,6 @@ function ChatRoom({
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null); // Ref for the dropdown menu
 
-  
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -146,11 +145,6 @@ function ChatRoom({
     setChatRoom(recordsChatRoom.data[0]);
   };
 
-  // Function to scroll to the bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const downloadFilesUnderMessagesInfo = async (messagesArr: ChatMessage[]) => {
     if (messagesArr.filter((message) => message.is_file).length <= 0) {
       return;
@@ -191,7 +185,6 @@ function ChatRoom({
     }
 
     try {
-
       setMessages((prevMessages) =>
         prevMessages.map((message) =>
           message.id === editingMessageId
@@ -223,7 +216,9 @@ function ChatRoom({
   };
 
   const handleDeleteMessage = async (messageID: number) => {
-    const updatedMessages = messages.filter((message) => message.id !== messageID);
+    const updatedMessages = messages.filter(
+      (message) => message.id !== messageID
+    );
     setMessages(updatedMessages);
 
     try {
@@ -252,6 +247,9 @@ function ChatRoom({
 
     setShowMenu(null);
   };
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   //#endregion
 
@@ -273,15 +271,6 @@ function ChatRoom({
             </h2>
           </div>
           <div className="flex space-x-2">
-            <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent w-full outline-none focus:w-80 transition-all duration-500 ease-in-out"
-              />
-            </div>
             <button
               onClick={() => setShowAddUser(true)}
               className="text-white rounded-full p-3 hover:bg-yellow-500"
@@ -290,8 +279,20 @@ function ChatRoom({
             </button>
           </div>
         </div>
+        <div className="flex items-center bg-gray-100 rounded-full px-4 py-2 space-x-2">
+          <input
+            type="text"
+            placeholder="Search messages..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-transparent w-full focus:outline-none"
+          />
+        </div>
       </div>
-      <div className="flex-1 flex flex-col-reverse overflow-y-auto p-4" ref={animationParent}>
+      <div
+        className="flex-1 flex flex-col-reverse overflow-y-auto p-4"
+        ref={animationParent}
+      >
         {isSearching && filteredMessages.length === 0 ? (
           <div className="text-center text-gray-500 my-4">
             No messages found for "{searchTerm}"
@@ -318,19 +319,21 @@ function ChatRoom({
                       className="w-6 h-6 pr-2 cursor-pointer group-hover:block"
                     />
                   )}
-  
+
                   {/* Three dots button for menu */}
                   {message.user_id === userID && (
                     <div className="relative">
                       <button
                         onClick={() =>
-                          setShowMenu(showMenu === message.id ? null : message.id)
+                          setShowMenu(
+                            showMenu === message.id ? null : message.id
+                          )
                         }
                         className="text-gray-600 hover:bg-gray-200 rounded-full p-2"
                       >
                         ...
                       </button>
-  
+
                       {/* Edit and Delete Menu positioned above the three dots */}
                       {showMenu === message.id && (
                         <div
@@ -355,7 +358,7 @@ function ChatRoom({
                       )}
                     </div>
                   )}
-  
+
                   {/* Conditionally show editing area */}
                   {editingMessageId === message.id ? (
                     <div>
@@ -412,10 +415,12 @@ function ChatRoom({
                         />
                       )}
                       {/* Text Message */}
-                      {!message.is_file && message.value}
+                      <p className="break-words">
+                        {!message.is_file && message.value}
+                      </p>
                     </p>
                   )}
-  
+
                   {/* Reply icon (for other users' messages) */}
                   {message.user_id !== userID && (
                     <img
@@ -429,11 +434,12 @@ function ChatRoom({
                     />
                   )}
                 </div>
-  
+
                 {/* Time Stamp */}
                 <p
                   className={`text-xs mt-1 opacity-75 ${
-                    index - 1 >= 0 && messages[index - 1].user_id === message.user_id
+                    index - 1 >= 0 &&
+                    messages[index - 1].user_id === message.user_id
                       ? "hidden"
                       : ""
                   }`}
@@ -445,14 +451,14 @@ function ChatRoom({
           ))
         )}
       </div>
-  
+
       {/* Input area */}
       <InputComponent
         chatRoomId={chatRoomId}
         replyMessage={replyMessage}
         clearReplyMessage={() => setReplyMessage(null)}
       />
-  
+
       {/* Add user popup*/}
       {showAddUser && (
         <PopupComponent onClose={() => setShowAddUser(false)}>
