@@ -1,5 +1,4 @@
 import { BaseUrl, BaseUrlWebSocket } from "./Constants";
-import { RecordController } from "./RecordController";
 import { ChatMessageNotify, ResponseMessage } from "./Types";
 
 export class RealTimeController {

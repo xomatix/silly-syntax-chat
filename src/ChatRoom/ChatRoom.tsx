@@ -17,7 +17,6 @@ import InputComponent from "./InputComponent";
 import { FilePluginController } from "../controllers/FilePluginController";
 import FileComponent from "./FileComponent";
 import ReplayMsgPreview from "./ReplayMsgPreview";
-import ProfileSettings from "../ProfileEdit/ProfileSettings";
 
 function ChatRoom({
   chatRoomId,
@@ -27,12 +26,11 @@ function ChatRoom({
   recievedMessage: ChatMessageNotify | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [chatRoom, setChatRoom] = useState<ChatRoomModel>({} as ChatRoomModel);
+  const [_, setChatRoom] = useState<ChatRoomModel>({} as ChatRoomModel);
   const [filteredMessages, setFilteredMessages] = useState<ChatMessage[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [showAddUser, setShowAddUser] = useState<boolean>(false);
-  const [showProfileSettings, setShowProfileSettings] = useState<boolean>(false); // Add state for ProfileSettings
   const [messageFiles, setMessageFiles] = useState<Map<number, number>>(
     new Map<number, number>()
   );
@@ -196,14 +194,7 @@ function ChatRoom({
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-transparent w-full focus:outline-none"
           />
-          
         </div>
-        <button
-            onClick={() => setShowProfileSettings(true)}
-            className="text-sm font-medium text-white bg-gray-500 px-4 py-2 rounded-md hover:bg-blue-600"
-          >
-            Edit Profile
-          </button>
       </div>
 
       {/* Messages area */}
@@ -276,7 +267,9 @@ function ChatRoom({
                         message={message.value}
                       />
                     )}
-                    {!message.is_file && message.value}
+                    <p className="break-words">
+                      {!message.is_file && message.value}
+                    </p>
                   </p>
 
                   {message.user_id !== userID && (
@@ -325,13 +318,6 @@ function ChatRoom({
               //handleReload();
             }}
           />
-        </PopupComponent>
-      )}
-
-      {/* Profile Settings popup */}
-      {showProfileSettings && (
-        <PopupComponent onClose={() => setShowProfileSettings(false)}>
-          <ProfileSettings onClose={() => setShowProfileSettings(false)} />
         </PopupComponent>
       )}
     </div>

@@ -6,14 +6,17 @@ import ChatRoom from "./ChatRoom/ChatRoom";
 import ChatRoomsListElem from "./ChatRoomsListElem/ChatRoomsListElem";
 import { AuthController } from "./controllers/AuthController";
 import ChatAdd from "./assets/chat-add.svg";
+import AccountIcon from "./assets/account.svg";
 import Logout from "./assets/logout.svg";
 import PopupComponent from "./Popup/PopupComponent";
 import CreateChatRoom from "./CreateChatRoom/CreateChatRoom";
+import ProfileSettings from "./ProfileEdit/ProfileSettings";
 
 function ChatRoomsList() {
   const [chatRooms, setChatRooms] = useState<HomeChatRoomModel[]>([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState<number>(0);
   const [showAddChatRoom, setShowAddChatRoom] = useState<boolean>(false);
+  const [showPrfileSettings, setShowPrfileSettings] = useState<boolean>(false);
   const [recievedMessage, setRecievedMessage] =
     useState<ChatMessageNotify | null>(null);
 
@@ -48,6 +51,10 @@ function ChatRoomsList() {
     setShowAddChatRoom(true);
   };
 
+  const handleShowProfileSettings = () => {
+    setShowPrfileSettings(true);
+  };
+
   const handleLogout = async () => {
     await AuthController.Logout();
     window.location.reload();
@@ -60,7 +67,18 @@ function ChatRoomsList() {
       <div className="w-1/4 bg-white border-r border-gray-200 overflow-y-auto">
         <div className="p-4">
           <div className="flex justify-between mb-4">
-            <div className="text-xl font-semibold">Chats</div>
+            <div className="text-xl font-semibold">
+              <button
+                onClick={handleShowProfileSettings}
+                className="text-white rounded-full p-2 hover:bg-yellow-500"
+              >
+                <img
+                  src={AccountIcon}
+                  alt="Profile settings"
+                  className="w-6 h-6"
+                />
+              </button>
+            </div>
             <div className="flex space-x-2">
               <button
                 onClick={handleAddChatRoom}
@@ -104,6 +122,13 @@ function ChatRoomsList() {
               handleReload();
             }}
           />
+        </PopupComponent>
+      )}
+
+      {/* Profile Settings popup */}
+      {showPrfileSettings && (
+        <PopupComponent onClose={() => setShowPrfileSettings(false)}>
+          <ProfileSettings onClose={() => setShowPrfileSettings(false)} />
         </PopupComponent>
       )}
     </div>
