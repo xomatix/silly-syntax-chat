@@ -222,10 +222,21 @@ function ChatRoom({
     }
 
     try {
+      setMessages((prevMessages) =>
+        prevMessages.map((message) =>
+          message.id === editingMessageId
+            ? { ...message, value: editedMessageText }
+            : message
+        )
+      );
+      let selMessage = messages.find(
+        (message) => message.id === editingMessageId
+      );
       const response = await RecordController.UpdateData({
         ID: editingMessageId,
         collectionName: "chat_message",
         values: {
+          ...selMessage,
           value: editedMessageText,
         },
       });
