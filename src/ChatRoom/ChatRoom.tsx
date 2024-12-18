@@ -87,7 +87,44 @@ function ChatRoom({
     ) {
       fetchData();
     }
+    handleEditDeleteMessageNotification(recievedMessage);
   }, [recievedMessage]);
+
+  const handleEditDeleteMessageNotification = async (
+    recMsg: ChatMessageNotify | null
+  ) => {
+    if (recMsg == null || recMsg.message_type == "new_message") {
+      return;
+    } else if (recMsg.message_type == "update_message") {
+      let filteredMessages: ChatMessage[] = await Promise.all(
+        messages.map(async (message) => {
+          if (message.id === recMsg.message_id) {
+            return await handleDownloadEditedMsg(recMsg.message_id);
+          } else return message;
+        })
+      );
+
+      setMessages(filteredMessages);
+      return;
+    } else if (recMsg.message_type == "delete_message") {
+      let filteredMessages: ChatMessage[] = messages.filter(
+        (msg) => msg.id !== recMsg.message_id
+      );
+      setMessages(filteredMessages);
+      return;
+    }
+  };
+
+  const handleDownloadEditedMsg = async (id: number) => {
+    let response = await RecordController.GetRecords({
+      collectionName: "chat_message",
+      filter: `id = ${id}`,
+    });
+    if (response.success && response.data.length > 0) {
+      return response.data[0];
+    }
+    return {} as ChatMessage;
+  };
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -185,14 +222,6 @@ function ChatRoom({
     }
 
     try {
-      setMessages((prevMessages) =>
-        prevMessages.map((message) =>
-          message.id === editingMessageId
-            ? { ...message, value: editedMessageText }
-            : message
-        )
-      );
-
       const response = await RecordController.UpdateData({
         ID: editingMessageId,
         collectionName: "chat_message",
