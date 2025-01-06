@@ -21,7 +21,7 @@ function ChatRoomsListElem({
       if (file.type === "image/jpeg" || file.type === "image/png") {
         const reader = new FileReader();
         reader.onload = () => {
-          setCustomBackgroundImg(reader.result as string); // Store the uploaded image as a data URL
+          setCustomBackgroundImg(reader.result as string); 
         };
         reader.readAsDataURL(file);
       } else {
@@ -40,7 +40,7 @@ function ChatRoomsListElem({
     >
       <div className="relative">
         <img
-          src={customBackgroundImg || BackgroundImg} // Use uploaded image or fallback to default
+          src={customBackgroundImg || BackgroundImg} 
           alt={`Chat room ${chatRoom.id}`}
           className="w-10 h-10 rounded-full"
         />
