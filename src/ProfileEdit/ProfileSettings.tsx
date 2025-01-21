@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { DataUpdateModel, UserModel } from "../controllers/Types";
+import { DataUpdateModel } from "../controllers/Types";
 import { RecordController } from "../controllers/RecordController";
+import { FilePluginController } from "../controllers/FilePluginController";
 
 interface ProfileSettingsProps {
   onClose: () => void;
@@ -11,10 +12,13 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
   const [profileEmail, setEmail] = useState<string>("");
   const [profilePassword, setPassword] = useState<string>("");
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
 
   const user_id = Number(localStorage.getItem("bonanza_user_id"));
+  //let user_id = Number(localStorage.getItem("bonanza_user_id"));
 
   useEffect(() => {
     async function fetchProfile() {
@@ -33,14 +37,16 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
         return;
       }
 
-      const userData: UserModel = response.data[0];
-      if (userData.id !== user_id) {
-        console.log("User data mismatch");
-        return;
-      }
-
+      const userData = response.data[0];
       setUserName(userData.username);
       setEmail(userData.email);
+
+      if (userData.profilePicture) {
+        const blob = new Blob([userData.profilePicture], { type: "image/jpeg" });
+        const url = URL.createObjectURL(blob);
+      //  setProfilePicture(blob);
+        setProfilePictureUrl(url);
+      }
     }
 
     fetchProfile();
@@ -58,8 +64,21 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
   };
 
   const handlePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setProfilePicture(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        if (reader.result) {
+          const newBlob = new Blob([reader.result as ArrayBuffer], { type: file.type });
+          //setProfilePicture(newBlob);
+
+          const url = URL.createObjectURL(newBlob);
+          setProfilePictureUrl(url);
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
     }
   };
 
@@ -81,7 +100,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
       return;
     }
 
-    setIsLoading(true); // Set loading to true when submitting
+    setIsLoading(true);
 
     const model: DataUpdateModel = {
       collectionName: "users",
@@ -104,15 +123,40 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
       };
 
       const responsePass = await RecordController.UpdateData(modelPass);
-
       setPassword("");
+
       if (!responsePass.success) {
-        setMessage(response.message);
+        setMessage(responsePass.message);
+        setIsLoading(false);
         return;
       }
     }
 
-    setIsLoading(false); // Set loading to false after submission
+    
+    if (profilePicture) {
+      try {
+        const formData = new FormData();
+        formData.append("file", profilePicture);
+
+        const uploadResponse = await FilePluginController.InsertData({file:profilePicture, ref_id: user_id,ref_type: "users" })
+       
+        if (uploadResponse.success) {
+          console.log("Profile picture uploaded successfully:", uploadResponse.data);
+        } else {
+          throw new Error(uploadResponse.message || "Profile picture upload failed");
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setMessage("Error uploading profile picture: " + error.message);
+        } else {
+          setMessage("An unknown error occurred during upload.");
+        }
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    setIsLoading(false);
 
     if (!response.success) {
       setMessage(response.message);
@@ -128,19 +172,46 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
         <h1 className="text-3xl font-bold">Edit Profile</h1>
       </div>
 
-      {message && (
-        <p className="text-green-600 text-lg mb-4 mx-auto ">{message}</p>
-      )}
+      {message && <p className="text-green-600 text-lg mb-4 mx-auto">{message}</p>}
 
-      <div
-        onSubmit={handleSubmit}
-        className="space-y-4 flex flex-col items-center w-full"
-      >
-        <div className="">
-          <label
-            htmlFor="username"
-            className="block text-sm font-medium text-gray-700 ml-2"
+      <div onSubmit={handleSubmit} className="space-y-4 flex flex-col items-center w-full">
+        <div className="relative w-24 h-24 rounded-full overflow-hidden border border-gray-300 mb-4">
+          {profilePictureUrl ? (
+            <img src={profilePictureUrl} alt="Profile" className="object-cover w-full h-full" />
+          ) : (
+            <div className="flex items-center justify-center w-full h-full bg-gray-200 text-gray-500">
+              <span className="text-xl">👤</span>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={() => setIsPopupOpen(true)}
+            className="text-blue-500 underline"
           >
+            Edit Profile Picture
+          </button>
+        </div>
+
+        {isPopupOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+            <div className="bg-white p-4 rounded-md shadow-md">
+              <h2 className="text-xl font-bold mb-2">Edit Profile Picture</h2>
+              <input type="file" accept="image/*" onChange={handlePictureChange} />
+              <button
+                onClick={() => setIsPopupOpen(false)}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700 ml-2">
             Username:
           </label>
           <input
@@ -149,16 +220,13 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
             name="username"
             value={profileUserName}
             onChange={handleInputChange}
-            className="flex items-center bg-gray-100 rounded-full px-4 py-2 "
+            className="flex items-center bg-gray-100 rounded-full px-4 py-2"
             required
           />
         </div>
 
         <div className="form-group">
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 ml-2"
-          >
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 ml-2">
             Email:
           </label>
           <input
@@ -173,10 +241,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
         </div>
 
         <div className="form-group">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 ml-2"
-          >
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 ml-2">
             Password:
           </label>
           <input
@@ -187,23 +252,6 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
             onChange={handleInputChange}
             className="flex items-center bg-gray-100 rounded-full px-4 py-2"
           />
-        </div>
-
-        <div className="form-group">
-          {/* <label className="block text-sm font-medium text-gray-700 mb-2">
-            Profile Picture:
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePictureChange}
-            className=""
-          />
-          {profilePicture && (
-            <div className="mt-2 text-sm text-gray-600">
-              Selected file: {profilePicture.name}
-            </div>
-          )} */}
         </div>
 
         <div className="flex justify-center space-x-4">

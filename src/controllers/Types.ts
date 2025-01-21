@@ -77,6 +77,7 @@ export type UserModel = {
   updated: Date;
   username: string;
   email: string;
+  profilePicture?: string | Blob; 
 };
 
 export type FileInsertModel = {
